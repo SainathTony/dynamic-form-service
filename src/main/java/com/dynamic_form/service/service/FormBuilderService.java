@@ -1,5 +1,7 @@
 package com.dynamic_form.service.service;
 
+import com.dynamic_form.service.dto.FormDetailsDTO;
+import com.dynamic_form.service.dto.FormFieldDTO;
 import com.dynamic_form.service.exception.ApiException;
 import com.dynamic_form.service.exception.FormBuilderException;
 import com.dynamic_form.service.exception.ResponseParsingException;
@@ -29,7 +31,7 @@ public class FormBuilderService {
     private static final String MODEL_NAME = "llama-3.1-8b-instant";
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public Map<String, Object> extractFormDetails(String userInput) {
+    public FormDetailsDTO extractFormDetails(String userInput) {
         OkHttpClient client = new OkHttpClient();
         logger.info("Starting form details extraction for input length: {}", userInput.length());
 
@@ -69,7 +71,7 @@ public class FormBuilderService {
         }
     }
 
-    private Map<String, Object> executeRequest(OkHttpClient client, Request request) {
+    private FormDetailsDTO executeRequest(OkHttpClient client, Request request) {
         try (Response response = client.newCall(request).execute()) {
             return handleApiResponse(response);
         } catch (IOException e) {
@@ -78,7 +80,7 @@ public class FormBuilderService {
         }
     }
 
-    private Map<String, Object> handleApiResponse(Response response) throws IOException {
+    private FormDetailsDTO handleApiResponse(Response response) throws IOException {
         if (!response.isSuccessful()) {
             String errorBody = response.body().string();
             logger.error("API request failed with status: {}, body: {}", response.code(), errorBody);
@@ -93,7 +95,7 @@ public class FormBuilderService {
         return parseApiResponse(responseBodyString);
     }
 
-    private Map<String, Object> parseApiResponse(String responseBodyString) {
+    private FormDetailsDTO parseApiResponse(String responseBodyString) {
         try {
             JsonNode root = mapper.readTree(responseBodyString);
             
@@ -119,24 +121,19 @@ public class FormBuilderService {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> parseFormDetails(String content) {
+    private FormDetailsDTO parseFormDetails(String content) {
         try {
             content = cleanJsonContent(content);
             
-            Map<String, Object> parsedContent = mapper.readValue(content, Map.class);
+            FormDetailsDTO formDetails = mapper.readValue(content, FormDetailsDTO.class);
             
-            validateParsedContent(parsedContent);
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("form_name", parsedContent.get("form_name"));
-            result.put("fields", parsedContent.get("fields"));
+            validateFormDetails(formDetails);
             
             logger.info("Successfully extracted form details: form_name='{}', fields_count={}", 
-                    parsedContent.get("form_name"), 
-                    parsedContent.get("fields") instanceof List ? ((List<?>) parsedContent.get("fields")).size() : 0);
+                    formDetails.getFormName(), 
+                    formDetails.getFields() != null ? formDetails.getFields().size() : 0);
             
-            return result;
+            return formDetails;
             
         } catch (JsonProcessingException e) {
             logger.error("Failed to parse form details JSON: {}", content, e);
@@ -160,23 +157,30 @@ public class FormBuilderService {
         return content.trim();
     }
 
-    private void validateParsedContent(Map<String, Object> parsedContent) {
-        if (!parsedContent.containsKey("form_name") || !parsedContent.containsKey("fields")) {
-            throw new ResponseParsingException("Missing required fields in AI response: form_name or fields");
+    private void validateFormDetails(FormDetailsDTO formDetails) {
+        if (formDetails == null) {
+            throw new ResponseParsingException("Form details object is null");
         }
         
-        Object formName = parsedContent.get("form_name");
-        if (formName == null || !StringUtils.hasText(formName.toString())) {
+        if (!StringUtils.hasText(formDetails.getFormName())) {
             throw new ResponseParsingException("Invalid or empty form_name in AI response");
         }
         
-        Object fields = parsedContent.get("fields");
-        if (!(fields instanceof List<?> fieldsList)) {
-            throw new ResponseParsingException("Fields must be an array in AI response");
-        }
-
-        if (fieldsList.isEmpty()) {
+        if (formDetails.getFields() == null || formDetails.getFields().isEmpty()) {
             throw new ResponseParsingException("At least one field is required in AI response");
+        }
+        
+        for (int i = 0; i < formDetails.getFields().size(); i++) {
+            FormFieldDTO field = formDetails.getFields().get(i);
+            if (field == null) {
+                throw new ResponseParsingException("Field at index " + i + " is null");
+            }
+            if (!StringUtils.hasText(field.getFieldName())) {
+                throw new ResponseParsingException("Field at index " + i + " has invalid or empty field_name");
+            }
+            if (!StringUtils.hasText(field.getFieldType())) {
+                throw new ResponseParsingException("Field at index " + i + " has invalid or empty field_type");
+            }
         }
     }
 }

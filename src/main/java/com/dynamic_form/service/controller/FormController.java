@@ -1,5 +1,7 @@
 package com.dynamic_form.service.controller;
 
+import com.dynamic_form.service.dto.FormDetailsDTO;
+import com.dynamic_form.service.dto.FormGenerationResponseDTO;
 import com.dynamic_form.service.dto.GenerateFormDTO;
 import com.dynamic_form.service.exception.ApiException;
 import com.dynamic_form.service.exception.FormBuilderException;
@@ -24,31 +26,27 @@ public class FormController {
     private final FormService formService;
 
     @PostMapping("/generate")
-    public ResponseEntity<Map<String, Object>> generateForm(@Valid @RequestBody GenerateFormDTO generateFormDTO) {
+    public ResponseEntity<FormGenerationResponseDTO> generateForm(@Valid @RequestBody GenerateFormDTO generateFormDTO) {
         try {
-            Map<String, Object> response = this.formService.generateForm(generateFormDTO.getFormInput());
+            FormDetailsDTO formDetails = this.formService.generateForm(generateFormDTO.getFormInput());
+            FormGenerationResponseDTO response = FormGenerationResponseDTO.success(formDetails);
             return ResponseEntity.ok(response);
         } catch (ApiException e) {
             logger.error("API error during form generation: {}", e.getMessage(), e);
-            return buildErrorResponse("AI service error: " + e.getMessage(), HttpStatus.BAD_GATEWAY);
+            FormGenerationResponseDTO errorResponse = FormGenerationResponseDTO.error("AI service error: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_GATEWAY);
         } catch (ResponseParsingException e) {
             logger.error("Response parsing error during form generation: {}", e.getMessage(), e);
-            return buildErrorResponse("Invalid response from AI service: " + e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
+            FormGenerationResponseDTO errorResponse = FormGenerationResponseDTO.error("Invalid response from AI service: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
         } catch (FormBuilderException e) {
             logger.error("Form builder error during form generation: {}", e.getMessage(), e);
-            return buildErrorResponse("Form generation error: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            FormGenerationResponseDTO errorResponse = FormGenerationResponseDTO.error("Form generation error: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             logger.error("Unexpected error during form generation", e);
-            return buildErrorResponse("An unexpected error occurred. Please try again later.", HttpStatus.INTERNAL_SERVER_ERROR);
+            FormGenerationResponseDTO errorResponse = FormGenerationResponseDTO.error("An unexpected error occurred. Please try again later.");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private ResponseEntity<Map<String, Object>> buildErrorResponse(String message, HttpStatus status) {
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("error", true);
-        errorResponse.put("message", message);
-        errorResponse.put("timestamp", System.currentTimeMillis());
-        errorResponse.put("status", status.value());
-        return new ResponseEntity<>(errorResponse, status);
     }
 }
