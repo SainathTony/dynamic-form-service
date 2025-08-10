@@ -65,14 +65,21 @@ public class FormSubmissionService {
         return convertToResponseDTO(savedSubmission);
     }
     
-    public List<FormSubmissionResponseDTO> getFormSubmissions(Long formId) {
-        logger.info("Fetching submissions for form ID: {}", formId);
+    public List<FormSubmissionResponseDTO> getFormSubmissions(Long formId, String searchTerm) {
+        logger.info("Fetching submissions for form ID: {} with search term: {}", formId, searchTerm);
         
         if (!formRepository.existsById(formId)) {
             throw new RuntimeException("Form not found with ID: " + formId);
         }
         
-        return formSubmissionRepository.findByFormIdOrderBySubmittedAtDesc(formId).stream()
+        List<FormSubmission> submissions;
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            submissions = formSubmissionRepository.findByFormIdWithSearchOrderBySubmittedAtDesc(formId, searchTerm.trim());
+        } else {
+            submissions = formSubmissionRepository.findByFormIdOrderBySubmittedAtDesc(formId);
+        }
+        
+        return submissions.stream()
                 .map(this::convertToResponseDTO)
                 .toList();
     }

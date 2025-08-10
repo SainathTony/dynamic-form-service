@@ -88,9 +88,11 @@ public class FormController {
     }
     
     @GetMapping("/{formId}/submissions")
-    public ResponseEntity<ResponseDTO<List<FormSubmissionResponseDTO>>> getFormSubmissions(@PathVariable Long formId) {
+    public ResponseEntity<ResponseDTO<List<FormSubmissionResponseDTO>>> getFormSubmissions(
+            @PathVariable Long formId,
+            @RequestParam(required = false) String searchTerm) {
         try {
-            List<FormSubmissionResponseDTO> submissions = formSubmissionService.getFormSubmissions(formId);
+            List<FormSubmissionResponseDTO> submissions = formSubmissionService.getFormSubmissions(formId, searchTerm);
             ResponseDTO<List<FormSubmissionResponseDTO>> response = ResponseDTO.success(submissions, "Form submissions retrieved successfully");
             logger.info("Retrieved {} submissions for form ID: {}", submissions.size(), formId);
             return ResponseEntity.ok(response);

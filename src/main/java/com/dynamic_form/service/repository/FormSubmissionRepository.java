@@ -13,4 +13,11 @@ public interface FormSubmissionRepository extends JpaRepository<FormSubmission, 
     
     @Query("SELECT fs FROM FormSubmission fs WHERE fs.form.id = :formId ORDER BY fs.submittedAt DESC")
     List<FormSubmission> findByFormIdOrderBySubmittedAtDesc(@Param("formId") Long formId);
+    
+    @Query("SELECT DISTINCT fs FROM FormSubmission fs " +
+           "LEFT JOIN fs.submissionFields sf " +
+           "WHERE fs.form.id = :formId " +
+           "AND (:searchTerm IS NULL OR LOWER(sf.fieldValue) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+           "ORDER BY fs.submittedAt DESC")
+    List<FormSubmission> findByFormIdWithSearchOrderBySubmittedAtDesc(@Param("formId") Long formId, @Param("searchTerm") String searchTerm);
 }
