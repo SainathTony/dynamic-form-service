@@ -9,9 +9,15 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FormFieldDTO {
-    @JsonProperty("field_name")
+    @JsonProperty("name")
     private String fieldName;
     
-    @JsonProperty("field_type")
+    @JsonProperty("type")
     private String fieldType;
+    
+    @JsonProperty("placeholder")
+    private String placeholder;
+    
+    @JsonProperty("required")
+    private Boolean required;
 }

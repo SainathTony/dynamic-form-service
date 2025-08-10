@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -44,7 +45,8 @@ public class FormService {
             FormFieldDTO fieldDTO = formDetails.getFields().get(i);
             FormField field = new FormField(fieldDTO.getFieldName(), fieldDTO.getFieldType());
             field.setFieldOrder(i + 1);
-            field.setIsRequired(false);
+            field.setIsRequired(fieldDTO.getRequired() != null ? fieldDTO.getRequired() : false);
+            field.setPlaceholder(fieldDTO.getPlaceholder());
             form.addField(field);
         }
         
@@ -63,9 +65,8 @@ public class FormService {
         dto.setFormName(form.getFormName());
         
         dto.setFields(form.getFields().stream()
-                .sorted((f1, f2) -> Integer.compare(f1.getFieldOrder() != null ? f1.getFieldOrder() : 0, 
-                                                   f2.getFieldOrder() != null ? f2.getFieldOrder() : 0))
-                .map(field -> new FormFieldDTO(field.getFieldName(), field.getFieldType()))
+                .sorted(Comparator.comparingInt(f -> f.getFieldOrder() != null ? f.getFieldOrder() : 0))
+                .map(field -> new FormFieldDTO(field.getFieldName(), field.getFieldType(), null, field.getIsRequired()))
                 .toList());
         dto.setCreated_at(form.getCreatedAt());
         
