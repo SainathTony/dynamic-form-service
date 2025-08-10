@@ -9,4 +9,5 @@ import java.time.LocalDateTime;
 @Data
 public class FormDetailsResponseDTO extends FormDetailsDTO{
     private LocalDateTime created_at;
+    private Long id;
 }

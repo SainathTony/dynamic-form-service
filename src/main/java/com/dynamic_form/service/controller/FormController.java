@@ -2,12 +2,15 @@ package com.dynamic_form.service.controller;
 
 import com.dynamic_form.service.dto.FormDetailsDTO;
 import com.dynamic_form.service.dto.FormDetailsResponseDTO;
+import com.dynamic_form.service.dto.FormSubmissionRequestDTO;
+import com.dynamic_form.service.dto.FormSubmissionResponseDTO;
 import com.dynamic_form.service.dto.GenerateFormDTO;
 import com.dynamic_form.service.dto.ResponseDTO;
 import com.dynamic_form.service.exception.ApiException;
 import com.dynamic_form.service.exception.FormBuilderException;
 import com.dynamic_form.service.exception.ResponseParsingException;
 import com.dynamic_form.service.service.FormService;
+import com.dynamic_form.service.service.FormSubmissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -16,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -24,6 +28,7 @@ import java.util.List;
 public class FormController {
     private static final Logger logger = LoggerFactory.getLogger(FormController.class);
     private final FormService formService;
+    private final FormSubmissionService formSubmissionService;
 
     @PostMapping("/generate")
     public ResponseEntity<ResponseDTO<FormDetailsDTO>> generateForm(@Valid @RequestBody GenerateFormDTO generateFormDTO) {
@@ -60,6 +65,42 @@ public class FormController {
         } catch (Exception e) {
             logger.error("Unexpected error while retrieving all forms", e);
             ResponseDTO<List<FormDetailsResponseDTO>> errorResponse = ResponseDTO.error("An unexpected error occurred while retrieving forms.");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @PostMapping("/submit")
+    public ResponseEntity<ResponseDTO<FormSubmissionResponseDTO>> submitForm(
+            @Valid @RequestBody FormSubmissionRequestDTO requestDTO) {
+        try {
+            FormSubmissionResponseDTO submission = formSubmissionService.submitForm(requestDTO);
+            ResponseDTO<FormSubmissionResponseDTO> response = ResponseDTO.success(submission, "Form submitted successfully");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            logger.error("Error submitting form: {}", e.getMessage(), e);
+            ResponseDTO<FormSubmissionResponseDTO> errorResponse = ResponseDTO.error(e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            logger.error("Unexpected error during form submission", e);
+            ResponseDTO<FormSubmissionResponseDTO> errorResponse = ResponseDTO.error("An unexpected error occurred during form submission.");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @GetMapping("/{formId}/submissions")
+    public ResponseEntity<ResponseDTO<List<FormSubmissionResponseDTO>>> getFormSubmissions(@PathVariable Long formId) {
+        try {
+            List<FormSubmissionResponseDTO> submissions = formSubmissionService.getFormSubmissions(formId);
+            ResponseDTO<List<FormSubmissionResponseDTO>> response = ResponseDTO.success(submissions, "Form submissions retrieved successfully");
+            logger.info("Retrieved {} submissions for form ID: {}", submissions.size(), formId);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            logger.error("Error retrieving form submissions: {}", e.getMessage(), e);
+            ResponseDTO<List<FormSubmissionResponseDTO>> errorResponse = ResponseDTO.error(e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            logger.error("Unexpected error while retrieving form submissions for form ID: {}", formId, e);
+            ResponseDTO<List<FormSubmissionResponseDTO>> errorResponse = ResponseDTO.error("An unexpected error occurred while retrieving form submissions.");
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

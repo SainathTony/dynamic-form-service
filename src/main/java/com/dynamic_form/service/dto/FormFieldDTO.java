@@ -10,6 +10,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FormFieldDTO {
+    private Long id;
+
     @JsonProperty("name")
     private String fieldName;
     

@@ -82,12 +82,13 @@ public class FormService {
                 .map(this::convertFieldToDTO)
                 .toList());
         dto.setCreated_at(form.getCreatedAt());
-        
+        dto.setId(form.getId());
         return dto;
     }
     
     private FormFieldDTO convertFieldToDTO(FormField field) {
         FormFieldDTO dto = new FormFieldDTO();
+        dto.setId(field.getId());
         dto.setFieldName(field.getFieldName());
         dto.setFieldType(field.getFieldType());
         dto.setPlaceholder(field.getPlaceholder());
