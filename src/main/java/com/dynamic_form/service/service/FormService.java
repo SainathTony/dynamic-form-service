@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class FormService {
     
     private final FormBuilderService formBuilderService;
     private final FormRepository formRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public FormDetailsDTO generateForm(String formInput) {
@@ -47,6 +50,16 @@ public class FormService {
             field.setFieldOrder(i + 1);
             field.setIsRequired(fieldDTO.getRequired() != null ? fieldDTO.getRequired() : false);
             field.setPlaceholder(fieldDTO.getPlaceholder());
+            
+            // Serialize options to JSON if they exist
+            if (fieldDTO.getOptions() != null && !fieldDTO.getOptions().isEmpty()) {
+                try {
+                    field.setOptions(objectMapper.writeValueAsString(fieldDTO.getOptions()));
+                } catch (JsonProcessingException e) {
+                    logger.warn("Failed to serialize options for field {}: {}", fieldDTO.getFieldName(), e.getMessage());
+                }
+            }
+            
             form.addField(field);
         }
         
@@ -66,9 +79,30 @@ public class FormService {
         
         dto.setFields(form.getFields().stream()
                 .sorted(Comparator.comparingInt(f -> f.getFieldOrder() != null ? f.getFieldOrder() : 0))
-                .map(field -> new FormFieldDTO(field.getFieldName(), field.getFieldType(), null, field.getIsRequired()))
+                .map(this::convertFieldToDTO)
                 .toList());
         dto.setCreated_at(form.getCreatedAt());
+        
+        return dto;
+    }
+    
+    private FormFieldDTO convertFieldToDTO(FormField field) {
+        FormFieldDTO dto = new FormFieldDTO();
+        dto.setFieldName(field.getFieldName());
+        dto.setFieldType(field.getFieldType());
+        dto.setPlaceholder(field.getPlaceholder());
+        dto.setRequired(field.getIsRequired());
+        
+        // Deserialize options from JSON if they exist
+        if (field.getOptions() != null && !field.getOptions().isEmpty()) {
+            try {
+                List<String> options = objectMapper.readValue(field.getOptions(), 
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+                dto.setOptions(options);
+            } catch (JsonProcessingException e) {
+                logger.warn("Failed to deserialize options for field {}: {}", field.getFieldName(), e.getMessage());
+            }
+        }
         
         return dto;
     }

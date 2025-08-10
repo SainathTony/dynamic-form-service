@@ -37,6 +37,9 @@ public class FormField {
     @Column(name = "validation_rules", columnDefinition = "TEXT")
     private String validationRules;
     
+    @Column(name = "options", columnDefinition = "TEXT")
+    private String options;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "form_id", nullable = false)
     private Form form;
