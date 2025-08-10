@@ -27,7 +27,7 @@ public class FormService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public FormDetailsDTO generateForm(String formInput) {
+    public FormDetailsResponseDTO generateForm(String formInput) {
         logger.info("Generating form from input with length: {}", formInput.length());
         
         FormDetailsDTO formDetails = this.formBuilderService.extractFormDetails(formInput);
@@ -35,8 +35,7 @@ public class FormService {
         Form savedForm = saveFormToDatabase(formDetails, formInput);
         
         logger.info("Form saved to database with ID: {}", savedForm.getId());
-        
-        return formDetails;
+        return convertToDTO(savedForm);
     }
     
     private Form saveFormToDatabase(FormDetailsDTO formDetails, String originalInput) {

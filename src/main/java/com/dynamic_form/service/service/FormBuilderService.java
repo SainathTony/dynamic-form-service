@@ -199,7 +199,8 @@ public class FormBuilderService {
                          "name": "<field name in title case>",
                          "type": "<text | number | date | email | dropdown | radio | checkbox | textarea>",
                          "placeholder": "<short placeholder text>",
-                         "required": <true | false>
+                         "required": <true | false>,
+                         "options": ["option1", "option2", "option3"]
                       }
                    ]
                 }
@@ -219,7 +220,16 @@ public class FormBuilderService {
                    - Uploads → file
                 6. Placeholders should be short, helpful prompts like "Enter Employee Name".
                 7. Set `required` to true unless the user specifies it is optional.
-                8. Ensure the JSON is valid — use double quotes around all keys and string values, lowercase for boolean.
+                8. **IMPORTANT**: For `dropdown` and `radio` field types, you MUST include an "options" array with relevant choices:
+                   - For Category: ["Junior", "Senior", "Open", "Women's", "Veterans"]
+                   - For Gender: ["Male", "Female", "Other", "Prefer not to say"]
+                   - For How did you hear about us: ["Social Media", "Friends/Family", "Google Search", "Advertisement", "Word of Mouth", "Other"]
+                   - For Experience Level: ["Beginner", "Intermediate", "Advanced", "Expert"]
+                   - For Size: ["XS", "S", "M", "L", "XL", "XXL"]
+                   - For Country: ["United States", "Canada", "United Kingdom", "Australia", "India", "Other"]
+                   - Always provide 3-6 relevant options based on the field context
+                9. For non-dropdown/radio fields (text, number, date, email, textarea), do NOT include the "options" property.
+                10. Ensure the JSON is valid — use double quotes around all keys and string values, lowercase for boolean.
                 """;
     }
 }

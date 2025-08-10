@@ -24,6 +24,7 @@ dependencies {
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'com.squareup.okhttp3:okhttp:5.1.0'
 	implementation 'com.fasterxml.jackson.core:jackson-core:2.20.0-rc1'
+	implementation 'io.github.cdimascio:dotenv-java:3.0.2'
 	compileOnly("org.projectlombok:lombok:1.18.38")
 	annotationProcessor("org.projectlombok:lombok:1.18.38")
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
