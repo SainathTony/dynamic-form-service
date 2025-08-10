@@ -1,8 +1,9 @@
 package com.dynamic_form.service.controller;
 
 import com.dynamic_form.service.dto.FormDetailsDTO;
-import com.dynamic_form.service.dto.FormGenerationResponseDTO;
+import com.dynamic_form.service.dto.FormDetailsResponseDTO;
 import com.dynamic_form.service.dto.GenerateFormDTO;
+import com.dynamic_form.service.dto.ResponseDTO;
 import com.dynamic_form.service.exception.ApiException;
 import com.dynamic_form.service.exception.FormBuilderException;
 import com.dynamic_form.service.exception.ResponseParsingException;
@@ -15,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/forms")
 @RequiredArgsConstructor
@@ -23,26 +26,40 @@ public class FormController {
     private final FormService formService;
 
     @PostMapping("/generate")
-    public ResponseEntity<FormGenerationResponseDTO> generateForm(@Valid @RequestBody GenerateFormDTO generateFormDTO) {
+    public ResponseEntity<ResponseDTO<FormDetailsDTO>> generateForm(@Valid @RequestBody GenerateFormDTO generateFormDTO) {
         try {
             FormDetailsDTO formDetails = this.formService.generateForm(generateFormDTO.getFormInput());
-            FormGenerationResponseDTO response = FormGenerationResponseDTO.success(formDetails);
+            ResponseDTO<FormDetailsDTO> response = ResponseDTO.success(formDetails, "Form generated successfully");
             return ResponseEntity.ok(response);
         } catch (ApiException e) {
             logger.error("API error during form generation: {}", e.getMessage(), e);
-            FormGenerationResponseDTO errorResponse = FormGenerationResponseDTO.error("AI service error: " + e.getMessage());
+            ResponseDTO<FormDetailsDTO> errorResponse = ResponseDTO.error("AI service error: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_GATEWAY);
         } catch (ResponseParsingException e) {
             logger.error("Response parsing error during form generation: {}", e.getMessage(), e);
-            FormGenerationResponseDTO errorResponse = FormGenerationResponseDTO.error("Invalid response from AI service: " + e.getMessage());
+            ResponseDTO<FormDetailsDTO> errorResponse = ResponseDTO.error("Invalid response from AI service: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
         } catch (FormBuilderException e) {
             logger.error("Form builder error during form generation: {}", e.getMessage(), e);
-            FormGenerationResponseDTO errorResponse = FormGenerationResponseDTO.error("Form generation error: " + e.getMessage());
+            ResponseDTO<FormDetailsDTO> errorResponse = ResponseDTO.error("Form generation error: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             logger.error("Unexpected error during form generation", e);
-            FormGenerationResponseDTO errorResponse = FormGenerationResponseDTO.error("An unexpected error occurred. Please try again later.");
+            ResponseDTO<FormDetailsDTO> errorResponse = ResponseDTO.error("An unexpected error occurred. Please try again later.");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @GetMapping
+    public ResponseEntity<ResponseDTO<List<FormDetailsResponseDTO>>> getAllForms() {
+        try {
+            List<FormDetailsResponseDTO> forms = this.formService.getAllForms();
+            ResponseDTO<List<FormDetailsResponseDTO>> response = ResponseDTO.success(forms, "Forms retrieved successfully");
+            logger.info("Retrieved {} forms from database", forms.size());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Unexpected error while retrieving all forms", e);
+            ResponseDTO<List<FormDetailsResponseDTO>> errorResponse = ResponseDTO.error("An unexpected error occurred while retrieving forms.");
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

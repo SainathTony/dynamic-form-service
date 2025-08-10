@@ -1,6 +1,7 @@
 package com.dynamic_form.service.service;
 
 import com.dynamic_form.service.dto.FormDetailsDTO;
+import com.dynamic_form.service.dto.FormDetailsResponseDTO;
 import com.dynamic_form.service.dto.FormFieldDTO;
 import com.dynamic_form.service.entity.Form;
 import com.dynamic_form.service.entity.FormField;
@@ -10,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -48,8 +51,15 @@ public class FormService {
         return formRepository.save(form);
     }
     
-    private FormDetailsDTO convertToDTO(Form form) {
-        FormDetailsDTO dto = new FormDetailsDTO();
+    public List<FormDetailsResponseDTO> getAllForms() {
+        logger.info("Fetching all forms from database");
+        return formRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
+
+    private FormDetailsResponseDTO convertToDTO(Form form) {
+        FormDetailsResponseDTO dto = new FormDetailsResponseDTO();
         dto.setFormName(form.getFormName());
         
         dto.setFields(form.getFields().stream()
@@ -57,6 +67,7 @@ public class FormService {
                                                    f2.getFieldOrder() != null ? f2.getFieldOrder() : 0))
                 .map(field -> new FormFieldDTO(field.getFieldName(), field.getFieldType()))
                 .toList());
+        dto.setCreated_at(form.getCreatedAt());
         
         return dto;
     }
